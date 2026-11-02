@@ -1,8 +1,8 @@
-"""Génère les icônes de l'app (PNG, sans dépendance) : carré noir #111111.
+"""Génère les icônes de l'app (PNG, sans dépendance) : carré bleu #346cff.
 Usage : python3 make_icons.py   -> web/icon-1024.png (.dmg), icon-512, icon-192, apple-touch-icon"""
 import zlib, struct, math, os
 
-BLUE = (0x11, 0x11, 0x11)  # #111111 (thème Neutre)
+BLUE = (0x34, 0x6c, 0xff)  # #346cff
 TERRA_TOP, TERRA_BOT = (208, 90, 52), (160, 58, 24)
 
 def seg(px, py, ax, ay, bx, by):
