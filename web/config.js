@@ -1,0 +1,4 @@
+window.TODO_CONFIG = {
+  supabaseUrl: 'https://zpacdohsiucahjuzpgdw.supabase.co',
+  supabaseKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpwYWNkb2hzaXVjYWhqdXpwZ2R3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM2MDMzNzEsImV4cCI6MjEwOTE3OTM3MX0.QC32m00vrEgr_netBPHD4YO2JhXnyzzx03JFKrijO_k'
+};

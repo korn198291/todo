@@ -1,0 +1,26 @@
+{
+  "name": "todo-minimal",
+  "productName": "Todo",
+  "version": "1.0.0",
+  "description": "To do list minimaliste",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --mac dmg"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.rmouadi.todo",
+    "productName": "Todo",
+    "files": ["main.js", "web/**/*"],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": "dmg",
+      "icon": "web/icon-1024.png"
+    },
+    "directories": { "output": "dist" }
+  }
+}
