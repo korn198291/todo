@@ -289,7 +289,7 @@ h1 .yr { color: var(--mute); font-weight: 500; }
 .add { display: flex; align-items: center; gap: var(--s3); margin: var(--s1) 0 var(--s2); }
 .add .plus { flex: none; display: grid; place-items: center; width: 24px; height: 24px; color: var(--mute); transition: color var(--d-base), transform var(--d-slow) var(--ease); }
 .add .plus .ico { width: 22px; height: 22px; }
-.add:focus-within .plus { color: var(--accent); transform: rotate(90deg); }
+.add:focus-within .plus { color: var(--accent); }
 .add input {
   flex: 1; min-width: 0; min-height: 44px; border: 0; background: none; color: var(--fg); font: inherit; font-size: var(--fs-body);
   padding: 0; outline: none; caret-color: var(--accent); border-radius: var(--r-sm);

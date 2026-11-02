@@ -101,7 +101,7 @@
     check: ico('<path pathLength="1" d="M7 12.5l3.2 3.2L17 8.8"/>'),
     x: ico('<path d="M6 12h12"/>'),
     cal: ico('<rect x="4" y="5.5" width="16" height="14" rx="3"/><path d="M4 10h16M9 3.5v4M15 3.5v4"/>'),
-    plus: ico('<path d="M12 5v14M5 12h14"/>'),
+    plus: ico('<path d="M12 5v14"/>'),
     left: ico('<path d="M14.5 6l-6 6 6 6"/>'),
     right: ico('<path d="M9.5 6l6 6-6 6"/>'),
     help: ico('<circle cx="12" cy="12" r="8.5"/><path d="M9.7 9.6a2.4 2.4 0 1 1 3.4 2.2c-.7.4-1.1.9-1.1 1.7M12 16.6v.1"/>'),
@@ -417,7 +417,7 @@
         if (inMonth) monthCount += l.length;
         var kids = [h('span', { class: 'cn', text: '' + d.getDate() })];
         l.slice(0, 3).forEach(function (t) { kids.push(h('span', { class: 'ct' + (t.done ? ' done' : ''), text: t.text })); });
-        if (l.length > 3) kids.push(h('span', { class: 'more', text: '+' + (l.length - 3) }));
+        if (l.length > 3) kids.push(h('span', { class: 'more', text: (l.length - 3) + ' autres' }));
         kids.push(h('span', { class: 'dots' }, nOpen ? [h('i'), nOpen > 1 ? h('i') : null, nOpen > 2 ? h('i') : null] : []));
         var b = h('button', { type: 'button', class: 'cell' + (inMonth ? '' : ' out') + (k === todayK ? ' today' : '') + (k === selK ? ' sel' : ''),
           'aria-label': cap(DAYS[d.getDay()]) + ' ' + d.getDate() + ' ' + MONTHS[d.getMonth()] + (l.length ? ', ' + l.length + ' tâche' + (l.length > 1 ? 's' : '') : ''),
