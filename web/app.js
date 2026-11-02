@@ -92,14 +92,14 @@
   function entomb(t) { tombs = tombs.filter(function (r) { return r.id !== t.id; }); tombs.push({ id: t.id, text: t.text, done: t.done, t: t.t, k: t.k, o: t.o, s: t.s || [], c: t.c || '', u: Date.now(), d: true, x: true }); }
   function unTomb(t) { tombs = tombs.filter(function (r) { return r.id !== t.id; }); }
   function byId(id) { return tasks.filter(function (x) { return x.id === id; })[0]; }
-  function undoneFirst(l) { return l.filter(function (t) { return !t.done; }).concat(l.filter(function (t) { return t.done; })); }
+  function undoneFirst(l) { return l; } // cochée : la tâche garde sa place
   function tasksFor(type, d) { var k = key(type, d); return undoneFirst(tasks.filter(function (t) { return t.t === type && t.k === k; })); }
   function overdue() { return tasks.filter(function (t) { return t.t === 'day' && t.k < todayK && !t.done; }).sort(function (a, b) { return a.k < b.k ? -1 : a.k > b.k ? 1 : 0; }); }
 
   /* ---------- état ---------- */
   var state = { view: 'hz', sel: parseDay(todayK), cal: null };
   state.cal = new Date(state.sel.getFullYear(), state.sel.getMonth(), 1);
-  var entering = {}, focusType = null, focusSub = null, timer = null, dragId = null;
+  var entering = {}, focusType = null, focusSub = null, focusTask = null, timer = null, dragId = null;
 
   /* ---------- DOM ---------- */
   function ico(p) { return '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">' + p + '</svg>'; }
@@ -143,7 +143,7 @@
   }
   function move(t, type, d) { t.t = type; t.k = key(type, d); tasks = tasks.filter(function (x) { return x !== t; }); tasks.push(t); orderAt(t); entering[t.id] = 1; save(); closeMenu(); render(); say('Tâche déplacée'); }
   function nudge(t, dir) { // réordonne au clavier (Alt + flèches)
-    var sib = tasks.filter(function (x) { return x.t === t.t && x.k === t.k && x.done === t.done; });
+    var sib = tasks.filter(function (x) { return x.t === t.t && x.k === t.k; });
     var nb = sib[sib.indexOf(t) + dir];
     if (!nb) return;
     var a = tasks.indexOf(t), b = tasks.indexOf(nb);
@@ -332,7 +332,15 @@
       timer = setTimeout(render, t.done ? 600 : 250);
     };
     x.onkeydown = function (e) {
-      if (e.key === 'Enter') { e.preventDefault(); x.blur(); }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        var v0 = x.textContent.trim();
+        if (!v0) { x.blur(); return; }
+        if (v0 !== t.text) { t.text = v0; touch(t); }
+        var n = { id: uid(), text: '', done: false, t: t.t, k: t.k, s: [], c: '' };
+        tasks.splice(tasks.indexOf(t) + 1, 0, n); orderAt(n);
+        entering[n.id] = 1; focusTask = n.id; save(); render();
+      }
       else if (e.key === 'Escape') { e.stopPropagation(); x.textContent = t.text; x.blur(); }
     };
     x.onpaste = function (e) {
@@ -343,7 +351,8 @@
     x.onblur = function () {
       li.draggable = true;
       var v = x.textContent.trim();
-      if (!v) remove(t, li);
+      if (!v && !t.text) { tasks = tasks.filter(function (z) { return z !== t; }); entomb(t); save(); render(); }
+      else if (!v) remove(t, li);
       else if (v !== t.text) { t.text = v; touch(t); save(); }
     };
     mv.onclick = function () { openMenu(mv, t); };
@@ -562,7 +571,11 @@
         if (dy) el.animate([{ transform: 'translateY(' + dy + 'px)' }, { transform: 'none' }], { duration: 240, easing: 'cubic-bezier(.2,.8,.2,1)' });
       });
     }
-    if (focusSub) {
+    if (focusTask) {
+      var te = document.querySelector('.task[data-id="' + focusTask + '"] .txt');
+      if (te) te.focus();
+      focusTask = null;
+    } else if (focusSub) {
       var se = document.querySelector('.stx[data-sid="' + focusSub + '"]');
       if (se) se.focus();
       focusSub = null;
