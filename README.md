@@ -1,11 +1,11 @@
 # Todo
 
-To do list style Timestripe, design "papier éditorial" (voir `design-system/todo/MASTER.md`). Données en local d'abord (localStorage `todo.v2`), l'app marche hors ligne ; synchronisation Mac et iPhone en option (Supabase).
-- Horizons : jour, semaine, mois, trimestre, année (chaque tâche appartient à une période), progression par carte
+To do list style Timestripe, design minimal (voir `design-system/todo/MASTER.md`). Données en local d'abord (localStorage `todo.v2`), l'app marche hors ligne ; synchronisation Mac et iPhone en option (Supabase).
+- Listes : jour, semaine, mois, trimestre, année (chaque tâche appartient à une période), progression par carte
 - Bande de la semaine + vue calendrier mensuel, clair et sombre automatiques
 - Section "En retard" dans la carte Jour, avec "Tout ramener à aujourd'hui"
 - Déplacer : glisser-déposer (sur un jour, une carte, ou entre deux tâches pour réordonner) ou menu Déplacer (Mac et iPhone)
-- Réglages (bouton à droite en haut, `⌘,`) : 4 thèmes (Papier, Sauge, Encre, Minuit), apparence auto, clair ou sombre, connexion à la synchronisation
+- Réglages (bouton à droite en haut, `⌘,`) : 4 thèmes (Neutre, Sauge, Encre, Minuit), apparence auto, clair ou sombre, connexion à la synchronisation
 - Raccourcis Mac : `⌘N` ou `n` nouvelle tâche, flèches gauche/droite = jour précédent/suivant, `t` = aujourd'hui, `⌥ ↑/↓` réordonner, `?` aide
 
 ## Structure

@@ -84,7 +84,7 @@
   function signOut() { auth = null; write(AUTHK, null); write(CURK, null); set({ status: 'signedout', email: '', error: '' }); }
 
   /* ---------- fusion (exposée pour les tests) ---------- */
-  function toRow(r) { return { id: r.id, text: r.text, done: !!r.done, t: r.t, k: r.k, o: r.o, u: r.u, x: !!r.x }; }
+  function toRow(r) { return { id: r.id, text: r.text, done: !!r.done, t: r.t, k: r.k, o: r.o, u: r.u, x: !!r.x, s: (r.s || []).filter(function (x) { return x && x.text; }), c: r.c || '' }; }
   function valid(r) { return r && typeof r.id === 'string' && typeof r.text === 'string' && TYPES.indexOf(r.t) >= 0 && typeof r.k === 'string'; }
   function merge(rows) {
     var s = ad.get(), byId = {}, changed = false;
@@ -94,7 +94,7 @@
       if (!valid(r)) return;
       var l = byId[r.id];
       if (l && +r.u <= l.u) return;
-      var n = { id: r.id, text: r.text, done: !!r.done, t: r.t, k: r.k, o: +r.o || 0, u: +r.u, d: false };
+      var n = { id: r.id, text: r.text, done: !!r.done, t: r.t, k: r.k, o: +r.o || 0, u: +r.u, d: false, s: Array.isArray(r.s) ? r.s : [], c: typeof r.c === 'string' ? r.c : '' };
       if (r.x) n.x = true;
       byId[r.id] = n; changed = true;
     });
@@ -125,7 +125,7 @@
   function pull(tk) {
     var since = read(CURK) || '1970-01-01T00:00:00.000Z', all = [], off = 0, max = 0;
     function page() {
-      return http('GET', '/rest/v1/tasks?select=id,text,done,t,k,o,u,x,ts&ts=gt.' + encodeURIComponent(since) + '&order=ts.asc,id.asc&limit=1000&offset=' + off, { token: tk }).then(function (rows) {
+      return http('GET', '/rest/v1/tasks?select=id,text,done,t,k,o,u,x,s,c,ts&ts=gt.' + encodeURIComponent(since) + '&order=ts.asc,id.asc&limit=1000&offset=' + off, { token: tk }).then(function (rows) {
         rows.forEach(function (r) { all.push(r); var m = Date.parse(r.ts); if (m > max) max = m; });
         if (rows.length === 1000) { off += 1000; return page(); }
       });

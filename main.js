@@ -15,7 +15,7 @@ function createWindow() {
     trafficLightPosition: { x: 22, y: 20 },
     // macOS : fond translucide (vibrancy), l'interface laisse passer un voile du bureau
     ...(mac ? { vibrancy: 'under-window', visualEffectState: 'followWindow', backgroundColor: '#00000000' }
-            : { backgroundColor: nativeTheme.shouldUseDarkColors ? '#121211' : '#F5F3EE' }),
+            : { backgroundColor: nativeTheme.shouldUseDarkColors ? '#0E0E0E' : '#FBFBFA' }),
     webPreferences: { contextIsolation: true, sandbox: true }
   });
   win.once('ready-to-show', () => win.show());

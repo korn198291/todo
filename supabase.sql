@@ -11,8 +11,14 @@ create table if not exists public.tasks (
   o        double precision not null default 0,   -- ordre d'affichage
   u        bigint not null,                        -- date de modification côté appareil (ms)
   x        boolean not null default false,         -- supprimée
+  s        jsonb   not null default '[]',          -- sous-tâches [{id,text,done}]
+  c        text    not null default '',            -- surlignage (y, p, g, b, v ou vide)
   ts       timestamptz not null default now()      -- date de réception côté serveur
 );
+
+-- Base créée avant les sous-tâches et le surlignage : ces deux lignes suffisent.
+alter table public.tasks add column if not exists s jsonb not null default '[]';
+alter table public.tasks add column if not exists c text not null default '';
 
 create index if not exists tasks_user_ts on public.tasks (user_id, ts);
 
