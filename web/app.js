@@ -590,9 +590,9 @@
   }
 
   /* ---------- thèmes et réglages ---------- */
-  var THEMES = [['papier', 'Neutre'], ['sauge', 'Sauge'], ['encre', 'Encre'], ['minuit', 'Minuit']];
+  var THEMES = [['ardoise', 'Ardoise'], ['sable', 'Sable'], ['papier', 'Neutre'], ['sauge', 'Sauge'], ['encre', 'Encre'], ['minuit', 'Minuit']];
   var PKEY = 'todo.ui';
-  var prefs = { theme: 'papier', mode: 'auto' };
+  var prefs = { theme: 'ardoise', mode: 'auto' };
   try {
     var sp = JSON.parse(localStorage.getItem(PKEY));
     if (sp && THEMES.some(function (t) { return t[0] === sp.theme; })) prefs.theme = sp.theme;
