@@ -78,18 +78,24 @@
 .electron { --bg: color-mix(in srgb, var(--bg-solid) 86%, transparent); --glass: color-mix(in srgb, var(--surface) 70%, transparent); }
 
 /* Thèmes (aussi appliqués aux pastilles de l'écran Réglages) */
-[data-theme="ardoise"] { /* ardoise noble : bleu nuit profond, bleu argent */
-  --bg-solid: light-dark(#E3E5EA, #1B2235);
-  --surface: light-dark(#EEF0F3, #242D45);
-  --surface-2: light-dark(#D3D7DF, #2D3752);
-  --fg: light-dark(#1A2133, #ECE8DF);
-  --mute: light-dark(#555D70, #A4A9B8);
-  --ctl: light-dark(#767E92, #7C849A);
-  --line: light-dark(#CBCFD8, #2D3752);
-  --accent: light-dark(#34508C, #AFC2E6);
-  --accent-fill: light-dark(#34508C, #AFC2E6);
-  --on-accent: light-dark(#FFFFFF, #1B2235);
+[data-theme="ardoise"] { /* ardoise noble : bleu nuit satiné, reflet doux, bleu argent */
+  --bg-solid: light-dark(#DCE2EE, #141C36);
+  --surface: light-dark(#EAEEF6, #1F2A4A);
+  --surface-2: light-dark(#C9D2E3, #2A3760);
+  --fg: light-dark(#141C33, #EEF1F8);
+  --mute: light-dark(#4F5B78, #A3AECB);
+  --ctl: light-dark(#6E7B9A, #7686AB);
+  --line: light-dark(#C2CCE0, #2A3760);
+  --accent: light-dark(#2F4E9A, #B4C8F2);
+  --accent-fill: light-dark(#2F4E9A, #B4C8F2);
+  --on-accent: light-dark(#FFFFFF, #141C36);
   --danger: light-dark(#A8322B, #E8929A);
+}
+[data-theme="ardoise"] body {
+  background-image:
+    radial-gradient(120% 70% at 85% -10%, light-dark(rgba(255,255,255,.55), rgba(110,150,255,.20)), transparent 60%),
+    linear-gradient(180deg, light-dark(rgba(255,255,255,.25), rgba(255,255,255,.04)), transparent 40%);
+  background-attachment: fixed;
 }
 [data-theme="papier"] {
   --bg-solid: light-dark(#FBFBFA, #0E0E0E);
