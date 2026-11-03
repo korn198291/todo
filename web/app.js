@@ -590,7 +590,7 @@
   }
 
   /* ---------- thèmes et réglages ---------- */
-  var THEMES = [['ardoise', 'Ardoise'], ['sable', 'Sable'], ['papier', 'Neutre'], ['sauge', 'Sauge'], ['encre', 'Encre'], ['minuit', 'Minuit']];
+  var THEMES = [['ardoise', 'Ardoise'], ['papier', 'Neutre'], ['sauge', 'Sauge'], ['minuit', 'Minuit']];
   var PKEY = 'todo.ui';
   var prefs = { theme: 'ardoise', mode: 'auto' };
   try {

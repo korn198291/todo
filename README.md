@@ -5,7 +5,7 @@ To do list style Timestripe, design minimal (voir `design-system/todo/MASTER.md`
 - Bande de la semaine + vue calendrier mensuel, clair et sombre automatiques
 - Section "En retard" dans la carte Jour, avec "Tout ramener à aujourd'hui"
 - Déplacer : glisser-déposer (sur un jour, une carte, ou entre deux tâches pour réordonner) ou menu Déplacer (Mac et iPhone)
-- Réglages (bouton à droite en haut, `⌘,`) : 4 thèmes (Neutre, Sauge, Encre, Minuit), apparence auto, clair ou sombre, connexion à la synchronisation
+- Réglages (bouton à droite en haut, `⌘,`) : 3 thèmes (Neutre, Sauge, Minuit), apparence auto, clair ou sombre, connexion à la synchronisation
 - Raccourcis Mac : `⌘N` ou `n` nouvelle tâche, flèches gauche/droite = jour précédent/suivant, `t` = aujourd'hui, `⌥ ↑/↓` réordonner, `?` aide
 
 ## Structure

@@ -78,31 +78,18 @@
 .electron { --bg: color-mix(in srgb, var(--bg-solid) 86%, transparent); --glass: color-mix(in srgb, var(--surface) 70%, transparent); }
 
 /* Thèmes (aussi appliqués aux pastilles de l'écran Réglages) */
-[data-theme="ardoise"] { /* inspiré de Nord et Things : gris bleu moyen, ni blanc ni noir */
-  --bg-solid: light-dark(#DCE0E7, #2E3440);
-  --surface: light-dark(#E9ECF1, #3B4252);
-  --surface-2: light-dark(#CDD3DD, #434C5E);
-  --fg: light-dark(#1E2430, #E5E9F0);
-  --mute: light-dark(#505B6D, #A9B3C4);
-  --ctl: light-dark(#6F7A8D, #7B88A1);
-  --line: light-dark(#C6CCD7, #434C5E);
-  --accent: light-dark(#2F5FB3, #88C0D0);
-  --accent-fill: light-dark(#2F5FB3, #88C0D0);
-  --on-accent: light-dark(#FFFFFF, #1E2430);
+[data-theme="ardoise"] { /* ardoise noble : bleu nuit profond, or champagne */
+  --bg-solid: light-dark(#E3E5EA, #1B2235);
+  --surface: light-dark(#EEF0F3, #242D45);
+  --surface-2: light-dark(#D3D7DF, #2D3752);
+  --fg: light-dark(#1A2133, #ECE8DF);
+  --mute: light-dark(#555D70, #A4A9B8);
+  --ctl: light-dark(#767E92, #7C849A);
+  --line: light-dark(#CBCFD8, #2D3752);
+  --accent: light-dark(#7A5C1E, #D4B77A);
+  --accent-fill: light-dark(#7A5C1E, #D4B77A);
+  --on-accent: light-dark(#FFFFFF, #1B2235);
   --danger: light-dark(#A8322B, #E8929A);
-}
-[data-theme="sable"] { /* inspiré de Bear et Craft : gris chaud moyen */
-  --bg-solid: light-dark(#E4DFD6, #36322D);
-  --surface: light-dark(#EFEBE3, #423D37);
-  --surface-2: light-dark(#D6D0C4, #4D4740);
-  --fg: light-dark(#2A2620, #EAE5DB);
-  --mute: light-dark(#5F584C, #B0A899);
-  --ctl: light-dark(#7C7466, #867E70);
-  --line: light-dark(#D0C9BB, #4D4740);
-  --accent: light-dark(#B0502B, #E8A27C);
-  --accent-fill: light-dark(#B0502B, #E8A27C);
-  --on-accent: light-dark(#FFFFFF, #2A2620);
-  --danger: light-dark(#A8322B, #F0948C);
 }
 [data-theme="papier"] {
   --bg-solid: light-dark(#FBFBFA, #0E0E0E);
@@ -128,19 +115,6 @@
   --accent: light-dark(#3F6B4A, #9CC7A5);
   --accent-fill: light-dark(#3F6B4A, #9CC7A5);
   --on-accent: light-dark(#FFFFFF, #0B160D);
-}
-[data-theme="encre"] {
-  --bg-solid: light-dark(#F2F2F2, #000000);
-  --surface: light-dark(#FFFFFF, #111111);
-  --surface-2: light-dark(#E8E8E8, #1E1E1E);
-  --fg: light-dark(#000000, #FFFFFF);
-  --mute: light-dark(#5E5E5E, #A0A0A0);
-  --ctl: light-dark(#858585, #6E6E6E);
-  --line: light-dark(#E2E2E2, #242424);
-  --accent: light-dark(#2447D8, #7C93FF);
-  --accent-fill: light-dark(#2447D8, #7C93FF);
-  --on-accent: light-dark(#FFFFFF, #000000);
-  --danger: light-dark(#C62828, #FF8A80);
 }
 [data-theme="minuit"] {
   color-scheme: dark;
