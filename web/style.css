@@ -78,7 +78,7 @@
 .electron { --bg: color-mix(in srgb, var(--bg-solid) 86%, transparent); --glass: color-mix(in srgb, var(--surface) 70%, transparent); }
 
 /* Thèmes (aussi appliqués aux pastilles de l'écran Réglages) */
-[data-theme="ardoise"] { /* ardoise noble : bleu nuit profond, or champagne */
+[data-theme="ardoise"] { /* ardoise noble : bleu nuit profond, bleu argent */
   --bg-solid: light-dark(#E3E5EA, #1B2235);
   --surface: light-dark(#EEF0F3, #242D45);
   --surface-2: light-dark(#D3D7DF, #2D3752);
@@ -86,8 +86,8 @@
   --mute: light-dark(#555D70, #A4A9B8);
   --ctl: light-dark(#767E92, #7C849A);
   --line: light-dark(#CBCFD8, #2D3752);
-  --accent: light-dark(#7A5C1E, #D4B77A);
-  --accent-fill: light-dark(#7A5C1E, #D4B77A);
+  --accent: light-dark(#34508C, #AFC2E6);
+  --accent-fill: light-dark(#34508C, #AFC2E6);
   --on-accent: light-dark(#FFFFFF, #1B2235);
   --danger: light-dark(#A8322B, #E8929A);
 }
