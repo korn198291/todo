@@ -631,6 +631,50 @@
     return [weekStrip(), h('div', { class: 'grid' }, [h('div', { class: 'col' }, [left]), h('div', { class: 'col side' }, [right])])];
   }
 
+  /* listes à puces dans les notes : "- " + Entrée enchaîne, Entrée sur une puce vide l'annule, Tab / Maj+Tab change de niveau (5 symboles) */
+  var MARKS = ['-', '•', '◦', '▪', '▫'];
+  function bulletOf(l) { var m = /^(\t*)([-•◦▪▫]) (.*)$/.exec(l); return m ? { lvl: m[1].length, text: m[3] } : null; }
+  function setLevel(l, lvl) { var b = bulletOf(l); return new Array(lvl + 1).join('\t') + MARKS[lvl] + ' ' + b.text; }
+  function lineShift(l, dir) { // dir +1 = Tab, -1 = Maj+Tab
+    var b = bulletOf(l);
+    if (b) { var n = Math.min(4, Math.max(0, b.lvl + dir)); return n === b.lvl ? l : setLevel(l, n); }
+    if (dir > 0) return '\t' + l;
+    return l.charAt(0) === '\t' ? l.slice(1) : l.replace(/^ {1,4}/, '');
+  }
+  function noteKey(e, ta) {
+    if (e.key === 'Escape') { e.stopPropagation(); ta.blur(); return; }
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    var v = ta.value, a = ta.selectionStart, b = ta.selectionEnd;
+    var ls = v.lastIndexOf('\n', a - 1) + 1;
+    function put(txt, from, to) { ta.setSelectionRange(from, to); if (!document.execCommand('insertText', false, txt)) ta.setRangeText(txt, from, to, 'end'); }
+    function done() { ta.dispatchEvent(new Event('input')); }
+    var le = v.indexOf('\n', a); if (le < 0) le = v.length;
+    var line = v.slice(ls, le), bl = bulletOf(line);
+    if (e.key === ' ' && a === b && !e.shiftKey) { // "-" puis espace au début de ligne : puce du niveau courant
+      var m = /^(\t*)-$/.exec(v.slice(ls, a));
+      if (m) { e.preventDefault(); put(MARKS[Math.min(4, m[1].length)] + ' ', a - 1, a); done(); }
+      return;
+    }
+    if (e.key === 'Enter' && a === b && !e.shiftKey && bl) {
+      e.preventDefault();
+      if (!bl.text.trim() && a >= ls + bl.lvl + 2) put('', ls, le);           // puce vide : on l'annule
+      else put('\n' + new Array(bl.lvl + 1).join('\t') + MARKS[bl.lvl] + ' ', a, a); // sinon la puce suivante
+      done(); return;
+    }
+    if (e.key !== 'Tab') return;
+    e.preventDefault();                                       // Tab ne change pas de champ (Échap pour sortir)
+    var dir = e.shiftKey ? -1 : 1;
+    if (a === b && !bl && dir > 0) { put('\t', a, a); done(); return; }
+    var from = ls, to = a === b ? le : v.indexOf('\n', b > a && v[b - 1] === '\n' ? b - 1 : b);
+    if (to < 0) to = v.length;
+    var lines = v.slice(from, to).split('\n'), out = lines.map(function (l) { return lineShift(l, dir); });
+    var d0 = out[0].length - lines[0].length, d = out.join('\n').length - (to - from);
+    if (!d && !d0) return;
+    put(out.join('\n'), from, to);
+    ta.setSelectionRange(Math.max(from, a + d0), Math.max(from, b + d));
+    done();
+  }
+
   function notesView(narrow) {
     var wide = !narrow && window.innerWidth > 700, q = state.nq.trim().toLowerCase();
     var all = notes.slice().sort(function (a, b) { return b.u - a.u; });
@@ -665,28 +709,7 @@
         clearTimeout(noteTimer); noteTimer = setTimeout(function () { noteTimer = null; save(); }, 400);
       };
       ta.onblur = flushNote;
-      ta.onkeydown = function (e) {
-        if (e.key === 'Escape') { e.stopPropagation(); ta.blur(); return; }
-        if (e.key !== 'Tab' || e.metaKey || e.ctrlKey || e.altKey) return;
-        e.preventDefault();                                   // Tab indente au lieu de changer de champ (Échap pour sortir)
-        var v = ta.value, a = ta.selectionStart, b = ta.selectionEnd;
-        var ls = v.lastIndexOf('\n', a - 1) + 1;
-        function put(txt, from, to) { ta.setSelectionRange(from, to); if (!document.execCommand('insertText', false, txt)) ta.setRangeText(txt, from, to, 'end'); }
-        if (a === b && !e.shiftKey) { put('\t', a, a); }
-        else {
-          var end = v.indexOf('\n', b > a && v[b - 1] === '\n' ? b - 1 : b); if (end < 0) end = v.length;
-          var lines = v.slice(ls, end).split('\n'), n0 = 0, first = 0;
-          var out = lines.map(function (l, i) {
-            if (!e.shiftKey) return '\t' + l;
-            var r = l.charAt(0) === '\t' ? 1 : (/^ {1,4}/.exec(l) || [''])[0].length;
-            if (i === 0) first = r; n0 += r; return l.slice(r);
-          }).join('\n');
-          put(out, ls, end);
-          var d = e.shiftKey ? -n0 : lines.length, d0 = e.shiftKey ? -first : 1;
-          ta.setSelectionRange(Math.max(ls, a + d0), Math.max(ls, b + d));
-        }
-        ta.dispatchEvent(new Event('input'));
-      };
+      ta.onkeydown = function (e) { noteKey(e, ta); };
       ed = h('section', { class: 'ned', 'aria-label': 'Édition de la note' }, [
         h('div', { class: 'nbar' }, [
           h('button', { class: 'ghost nback', type: 'button', text: 'Notes', onclick: function () { leaveNote(); render(); } }),
