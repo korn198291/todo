@@ -821,7 +821,7 @@
           h('div', { class: 'seg', role: 'group', 'aria-label': 'Vue' }, VIEWS.map(function (v) { return seg(v[0], v[1]); })),
           h('button', { class: 'today-fab', type: 'button', 'aria-label': 'Revenir à aujourd’hui', text: '' + new Date().getDate(), onclick: goToday })
         ]),
-        splitOn() ? h('button', { class: 'nav split-btn', type: 'button', 'aria-label': 'Fermer la vue double', title: 'Fermer la vue double', html: IC.close, onclick: closeSplit }) : null,
+        splitOn() ? h('button', { class: 'nav split-btn', type: 'button', 'aria-label': 'Fermer la vue double', title: 'Fermer la vue double', html: IC.x, onclick: closeSplit }) : null,
         visibleViews().indexOf('hz') >= 0 ? h('button', { class: 'nav lay-btn', type: 'button', 'aria-label': prefs.lay === 'h' ? 'Vue verticale' : 'Vue horizontale', 'aria-pressed': String(prefs.lay === 'h'), html: IC.lay,
           onclick: function () { prefs.lay = prefs.lay === 'h' ? 'v' : 'h'; applyPrefs(); render('fade'); } }) : null,
         h('button', { class: 'nav help-btn', type: 'button', 'aria-label': 'Raccourcis clavier', html: IC.help, onclick: openHelp }),
