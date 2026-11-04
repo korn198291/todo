@@ -107,7 +107,7 @@
   function overdue() { return tasks.filter(function (t) { return t.t === 'day' && t.k < todayK && !t.done; }).sort(function (a, b) { return a.k < b.k ? -1 : a.k > b.k ? 1 : 0; }); }
 
   /* ---------- état ---------- */
-  var state = { view: 'hz', sel: parseDay(todayK), cal: null, note: null, nq: '' };
+  var state = { focus: 'l', view: 'hz', sel: parseDay(todayK), cal: null, note: null, nq: '' };
   state.cal = new Date(state.sel.getFullYear(), state.sel.getMonth(), 1);
   var focusNote = false, entering = {}, focusType = null, focusSub = null, focusTask = null, timer = null, dragId = null;
 
@@ -706,23 +706,40 @@
   /* ---------- vue double : deux vues côte à côte ---------- */
   var VIEWS = [['hz', 'Listes'], ['plan', 'Planning'], ['cal', 'Calendrier'], ['notes', 'Notes']];
   function splitOn() { return !!prefs.split && prefs.split !== state.view && window.innerWidth > 700; }
-  function setMain(v) {
-    if (state.view === v) return;
-    var old = state.view;
-    if (splitOn() && prefs.split === v) prefs.split = old;                       // échange des deux volets
-    else if (old === 'notes' && !(splitOn() && prefs.split === 'notes')) leaveNote();
-    state.view = v; applyPrefs(); render('fade');
-  }
-  function setSplit(v) {
-    if (prefs.split === v) return;
-    if (v === state.view) { var m = state.view; state.view = prefs.split; prefs.split = m; }
-    else { if (prefs.split === 'notes' && state.view !== 'notes') leaveNote(); prefs.split = v; }
+  function visibleViews() { return splitOn() ? [state.view, prefs.split] : [state.view]; }
+  function setPair(l, r) { // l = volet gauche, r = volet droit ('' = une seule vue)
+    var before = visibleViews().indexOf('notes') >= 0;
+    state.view = l; prefs.split = r || '';
+    if (before && [l, r].indexOf('notes') < 0) leaveNote();
     applyPrefs(); render('fade');
   }
-  function toggleSplit() {
-    if (splitOn()) { if (prefs.split === 'notes' && state.view !== 'notes') leaveNote(); prefs.split = ''; }
-    else prefs.split = state.view === 'notes' ? 'plan' : 'notes';
-    applyPrefs(); render('fade');
+  function setMain(v) { // clic sur un onglet : remplace le volet actif
+    var vis = visibleViews();
+    if (vis.indexOf(v) >= 0) { if (vis.length > 1) { state.focus = vis[0] === v ? 'l' : 'r'; render(); } return; }
+    if (!splitOn()) return setPair(v, '');
+    if (state.focus === 'r') setPair(state.view, v); else setPair(v, prefs.split);
+  }
+  function placeTab(v, side) { // comme Chrome : mettre l'onglet à gauche ou à droite, l'autre volet reste de l'autre côté
+    var vis = visibleViews(), other;
+    if (vis.indexOf(v) >= 0) other = vis.filter(function (x) { return x !== v; })[0] || (v === 'notes' ? 'plan' : 'notes');
+    else other = side === 'l' ? vis[vis.length - 1] : vis[0];
+    state.focus = side;
+    if (side === 'l') setPair(v, other); else setPair(other, v);
+  }
+  function closeSplit() { setPair(state.focus === 'r' ? prefs.split : state.view, ''); }
+  var dragTab = null, dzEls = [];
+  function endTabDrag() { dragTab = null; dzEls.forEach(function (e) { e.remove(); }); dzEls = []; }
+  function startTabDrag(v) { // deux zones, gauche et droite, pour déposer l'onglet
+    dragTab = v;
+    var st = document.querySelector('.stage'); if (!st) return;
+    var r = st.getBoundingClientRect(), top = Math.max(r.top - 8, 70), hgt = window.innerHeight - top - 12, mid = window.innerWidth / 2;
+    [['l', 'Gauche'], ['r', 'Droite']].forEach(function (z) {
+      var e = h('div', { class: 'dz dz-' + z[0], style: 'top:' + top + 'px;height:' + hgt + 'px;left:' + (z[0] === 'l' ? 12 : mid + 4) + 'px;width:' + (mid - 16) + 'px' }, [h('span', { text: z[1] })]);
+      e.addEventListener('dragover', function (ev) { ev.preventDefault(); e.classList.add('over'); });
+      e.addEventListener('dragleave', function () { e.classList.remove('over'); });
+      e.addEventListener('drop', function (ev) { ev.preventDefault(); var t = dragTab; endTabDrag(); if (t) placeTab(t, z[0]); });
+      document.body.append(e); dzEls.push(e);
+    });
   }
   function paneNodes(v, narrow) { return v === 'hz' ? hzView() : v === 'plan' ? planView() : v === 'notes' ? notesView(narrow) : calView(); }
   function stageNodes() {
@@ -730,10 +747,7 @@
     var a = state.view, b = prefs.split;
     function nodes(v) { var n = paneNodes(v, true); return v === 'hz' || v === 'plan' ? n.slice(1) : n; } // la bande des jours est commune
     var needStrip = a === 'hz' || a === 'plan' || b === 'hz' || b === 'plan';
-    var bar = h('div', { class: 'pane-bar' }, [h('div', { class: 'seg', role: 'group', 'aria-label': 'Vue du second volet' }, VIEWS.map(function (v) {
-      return h('button', { type: 'button', text: v[1], 'aria-pressed': String(b === v[0]), onclick: function () { setSplit(v[0]); } });
-    }))]);
-    return [needStrip ? weekStrip() : null, h('div', { class: 'panes' }, [h('div', { class: 'pane' }, nodes(a)), h('div', { class: 'pane' }, [bar].concat(nodes(b)))])];
+    return [needStrip ? weekStrip() : null, h('div', { class: 'panes' }, [h('div', { class: 'pane' + (state.focus !== 'r' ? ' on' : ''), 'data-side': 'l' }, nodes(a)), h('div', { class: 'pane' + (state.focus === 'r' ? ' on' : ''), 'data-side': 'r' }, nodes(b))])];
   }
 
   function topbar() {
@@ -743,8 +757,13 @@
       else state.sel = addDays(state.sel, 7 * n);
       render(n > 0 ? 'next' : 'prev');
     }
-    function seg(v, label) {
-      return h('button', { type: 'button', text: label, 'aria-pressed': String(state.view === v), onclick: function () { setMain(v); } });
+    var vis = visibleViews();
+    function seg(v, label) { // onglet : clic = afficher, glisser vers un côté ou menu au survol = gauche / droite
+      var b = h('button', { type: 'button', text: label, 'aria-pressed': String(vis.indexOf(v) >= 0), draggable: 'true', onclick: function () { setMain(v); } });
+      b.addEventListener('dragstart', function (e) { e.dataTransfer.setData('text/plain', v); e.dataTransfer.effectAllowed = 'move'; setTimeout(function () { startTabDrag(v); }, 0); });
+      b.addEventListener('dragend', endTabDrag);
+      function side(sd, lab) { return h('button', { type: 'button', 'aria-label': label + ' à ' + (sd === 'l' ? 'gauche' : 'droite'), html: IC.split.replace('</svg>', '<rect class="fill ' + sd + '" x="' + (sd === 'l' ? 4 : 13) + '" y="5" width="7" height="14" rx="2"/></svg>') + '<span>' + lab + '</span>', onclick: function () { placeTab(v, sd); } }); }
+      return h('span', { class: 'tab' }, [b, h('span', { class: 'tp' }, [h('span', { class: 'tpi' }, [side('l', 'Gauche'), side('r', 'Droite')])])]);
     }
     return h('div', { class: 'top' }, [
       h('h1', { 'aria-live': 'polite' }, nts ? ['Notes'] : [cap(MONTHS[d.getMonth()]) + ' ', h('span', { class: 'yr', text: '' + d.getFullYear() })]),
@@ -758,9 +777,8 @@
           h('div', { class: 'seg', role: 'group', 'aria-label': 'Vue' }, VIEWS.map(function (v) { return seg(v[0], v[1]); })),
           h('button', { class: 'today-fab', type: 'button', 'aria-label': 'Revenir à aujourd’hui', text: '' + new Date().getDate(), onclick: goToday })
         ]),
-        h('button', { class: 'nav split-btn', type: 'button', 'aria-label': splitOn() ? 'Fermer la vue double' : 'Vue double', 'aria-pressed': String(splitOn()), html: IC.split,
-          onclick: toggleSplit }),
-        state.view === 'hz' || (splitOn() && prefs.split === 'hz') ? h('button', { class: 'nav lay-btn', type: 'button', 'aria-label': prefs.lay === 'h' ? 'Vue verticale' : 'Vue horizontale', 'aria-pressed': String(prefs.lay === 'h'), html: IC.lay,
+        splitOn() ? h('button', { class: 'nav split-btn', type: 'button', 'aria-label': 'Fermer la vue double', title: 'Fermer la vue double', html: IC.close, onclick: closeSplit }) : null,
+        visibleViews().indexOf('hz') >= 0 ? h('button', { class: 'nav lay-btn', type: 'button', 'aria-label': prefs.lay === 'h' ? 'Vue verticale' : 'Vue horizontale', 'aria-pressed': String(prefs.lay === 'h'), html: IC.lay,
           onclick: function () { prefs.lay = prefs.lay === 'h' ? 'v' : 'h'; applyPrefs(); render('fade'); } }) : null,
         h('button', { class: 'nav help-btn', type: 'button', 'aria-label': 'Raccourcis clavier', html: IC.help, onclick: openHelp }),
         h('button', { class: 'nav cfg-btn' + (cfgAlert() ? ' alert' : ''), type: 'button', 'aria-label': 'Réglages', 'aria-haspopup': 'dialog', html: IC.cfg, onclick: openSettings })
@@ -792,7 +810,7 @@
     var before = anim ? null : rects();
     var stage = h('div', { class: 'stage' + (anim ? ' ' + anim : '') }, stageNodes());
     root.dataset.view = state.view; root.dataset.split = splitOn() ? '1' : '';
-    root.dataset.lay = state.view === 'hz' || (splitOn() && prefs.split === 'hz') ? prefs.lay : 'v';
+    root.dataset.lay = visibleViews().indexOf('hz') >= 0 ? prefs.lay : 'v';
     root.replaceChildren(topbar(), stage, live);
     entering = {};
     if (before && !reduceMotion.matches) {
@@ -962,6 +980,7 @@
   document.addEventListener('visibilitychange', refreshToday);
   window.addEventListener('focus', refreshToday);
 
+  document.addEventListener('pointerdown', function (e) { var pn = e.target.closest && e.target.closest('.pane'); if (pn && pn.dataset.side && state.focus !== pn.dataset.side) { state.focus = pn.dataset.side; document.querySelectorAll('.pane').forEach(function (x) { x.classList.toggle('on', x.dataset.side === state.focus); }); } }, true);
   applyPrefs();
   render('fade');
   if (window.TodoSync) {
