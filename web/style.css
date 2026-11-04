@@ -568,7 +568,20 @@ dialog.sheet::backdrop { background: var(--scrim); animation: fade-in var(--d-ba
 .nbar .nd { margin-right: auto; }
 .nbar .ghost { padding: 0 var(--s2); }
 .ndel { color: var(--danger); }
-.ntext { tab-size: 4; display: block; width: 100%; min-height: 60vh; margin-top: var(--s4); padding: 0; border: 0; background: transparent; color: var(--fg); font: inherit; font-size: var(--fs-task); line-height: 1.6; resize: none; outline: none; caret-color: var(--fg); }
+.nwrap { display: grid; margin-top: var(--s3); min-height: 60vh; }
+.nmirror, .ntext { grid-area: 1 / 1; tab-size: 4; margin: 0; padding: 0; border: 0; font: inherit; font-size: var(--fs-task); line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; letter-spacing: normal; }
+.nmirror { color: var(--fg); pointer-events: none; }
+.nmirror .mk { font-style: normal; font-weight: 400; color: var(--mute); opacity: .55; }
+.nmirror mark { color: inherit; background: var(--hl); border-radius: 3px; }
+.nmirror mark[data-c="y"] { --hl: var(--hl-y); } .nmirror mark[data-c="p"] { --hl: var(--hl-p); } .nmirror mark[data-c="g"] { --hl: var(--hl-g); } .nmirror mark[data-c="b"] { --hl: var(--hl-b); } .nmirror mark[data-c="v"] { --hl: var(--hl-v); }
+.nmirror b { font-weight: 700; } .nmirror u { text-underline-offset: 2px; }
+.nfmt { display: flex; align-items: center; gap: var(--s1); flex-wrap: wrap; margin-top: var(--s3); }
+.nfmt .fb { min-width: 32px; height: 32px; padding: 0; border: 0; border-radius: var(--r-md); background: none; color: var(--fg); font: inherit; font-size: var(--fs-small); cursor: pointer; }
+.nfmt .fb:hover { background: var(--surface-2); }
+.nfmt .fb-b { font-weight: 700; } .nfmt .fb-i { font-style: italic; } .nfmt .fb-u { text-decoration: underline; }
+.nfmt .fsep { width: 1px; height: 18px; margin: 0 var(--s2); background: var(--line); }
+.nfmt .hl { width: 22px; height: 22px; margin: 5px 3px; }
+.ntext { color: transparent; background: transparent; resize: none; overflow: hidden; position: relative; font: inherit; font-size: var(--fs-task); line-height: 1.6; resize: none; outline: none; caret-color: var(--fg); }
 .ntext::placeholder { color: var(--mute); }
 @media (min-width: 701px) {
   .notes:not(.narrow) { grid-template-columns: 280px minmax(0, 1fr); gap: var(--s10); align-items: start; }

@@ -215,8 +215,9 @@
 
   /* ---------- notes ---------- */
   function noteById(id) { return id ? notes.filter(function (n) { return n.id === id; })[0] : null; }
-  function noteTitle(n) { var l = n.text.split('\n').map(function (x) { return x.trim(); }).filter(Boolean); return l[0] || 'Nouvelle note'; }
-  function notePreview(n) { var l = n.text.split('\n').map(function (x) { return x.trim(); }).filter(Boolean); return l.slice(1).join(' ').slice(0, 120); }
+  function stripFmt(t) { return t.replace(/\{[ypgbv]:([^{}\n]*)\}/g, '$1').replace(/\*\*(.+?)\*\*/g, '$1').replace(/__(.+?)__/g, '$1').replace(/\*(.+?)\*/g, '$1'); }
+  function noteTitle(n) { var l = stripFmt(n.text).split('\n').map(function (x) { return x.trim(); }).filter(Boolean); return l[0] || 'Nouvelle note'; }
+  function notePreview(n) { var l = stripFmt(n.text).split('\n').map(function (x) { return x.trim(); }).filter(Boolean); return l.slice(1).join(' ').slice(0, 120); }
   function noteDate(ms) {
     var d = new Date(ms);
     return dayKey(d) === dayKey(new Date()) ? pad(d.getHours()) + ':' + pad(d.getMinutes()) : d.getDate() + ' ' + MON3[d.getMonth()];
@@ -624,7 +625,7 @@
     input.onkeydown = function (ev) { if (ev.key === 'Escape') { input.value = ''; input.blur(); } };
     var right = h('section', { class: 'card pool', 'aria-label': 'Tâches à planifier' }, [
       pool.length ? h('header', { class: 'ch pool-h' }, [h('span'), h('span', { class: 'cnt' }, [h('b', { text: '' + pool.length })])]) : null,
-      pool.length ? h('ul', { role: 'list' }, pool.map(function (t) { return row(t); })) : h('p', { class: 'none', text: 'Tout est planifié.' }),
+      pool.length ? h('ul', { role: 'list' }, pool.map(function (t) { return row(t); })) : null,
       add
     ]);
     dropBlock(right, '');
@@ -641,8 +642,57 @@
     if (dir > 0) return '\t' + l;
     return l.charAt(0) === '\t' ? l.slice(1) : l.replace(/^ {1,4}/, '');
   }
+
+  /* mise en forme des notes : marqueurs dans le texte brut, rendus par une couche derrière le champ */
+  function fmtHtml(t) {
+    var o = t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    function mk(x) { return '<i class="mk">' + x + '</i>'; }
+    o = o.replace(/\{([ypgbv]):([^{}\n]*)\}/g, function (m, c, x) { return mk('{' + c + ':') + '<mark data-c="' + c + '">' + x + '</mark>' + mk('}'); });
+    o = o.replace(/\*\*(.+?)\*\*/g, function (m, x) { return mk('**') + '<b>' + x + '</b>' + mk('**'); });
+    o = o.replace(/__(.+?)__/g, function (m, x) { return mk('__') + '<u>' + x + '</u>' + mk('__'); });
+    o = o.replace(/\*(.+?)\*/g, function (m, x) { return mk('*') + '<em>' + x + '</em>' + mk('*'); });
+    return o + '\n';
+  }
+  function wrapSel(ta, open, close) { // entoure la sélection, ou retire les marqueurs s'ils y sont déjà
+    var v = ta.value, a = ta.selectionStart, b = ta.selectionEnd;
+    function put(txt, from, to) { ta.setSelectionRange(from, to); if (!document.execCommand('insertText', false, txt)) ta.setRangeText(txt, from, to, 'end'); }
+    var hm = /^\{[ypgbv]:$/.test(open) ? /\{[ypgbv]:$/.exec(v.slice(0, a)) : null;
+    if (hm && v.charAt(b) === '}') { // déjà surligné : remplace la couleur ou retire
+      var cur = hm[0], st = a - cur.length;
+      put(cur === open ? v.slice(a, b) : open + v.slice(a, b) + close, st, b + 1);
+      ta.setSelectionRange(st + (cur === open ? 0 : open.length), st + (cur === open ? b - a : open.length + b - a));
+    } else if (v.slice(a - open.length, a) === open && v.slice(b, b + close.length) === close && open !== '*') {
+      put(v.slice(a, b), a - open.length, b + close.length); ta.setSelectionRange(a - open.length, b - open.length);
+    } else if (open === '*' && v.slice(a - 1, a) === '*' && v.slice(b, b + 1) === '*' && v.charAt(a - 2) !== '*' && v.charAt(b + 1) !== '*') {
+      put(v.slice(a, b), a - 1, b + 1); ta.setSelectionRange(a - 1, b - 1);
+    } else {
+      put(open + v.slice(a, b) + close, a, b); ta.setSelectionRange(a + open.length, b + open.length);
+    }
+    ta.dispatchEvent(new Event('input')); ta.focus();
+  }
+  var NFMT = [['b', '**', '**', 'Gras', 'B'], ['i', '*', '*', 'Italique', 'I'], ['u', '__', '__', 'Souligné', 'U']];
+  var NHL = [['y', 'Jaune'], ['p', 'Rose'], ['g', 'Vert'], ['b', 'Bleu'], ['v', 'Violet']];
+  function fmtBar(ta) {
+    var bar = h('div', { class: 'nfmt', role: 'toolbar', 'aria-label': 'Mise en forme' });
+    function keep(e) { e.preventDefault(); } // le champ garde la sélection
+    NFMT.forEach(function (f) {
+      var bt = h('button', { class: 'fb fb-' + f[0], type: 'button', 'aria-label': f[3], title: f[3] + ' (⌘' + f[4] + ')', text: f[4], onclick: function () { wrapSel(ta, f[1], f[2]); } });
+      bt.addEventListener('mousedown', keep); bar.append(bt);
+    });
+    bar.append(h('span', { class: 'fsep', 'aria-hidden': 'true' }));
+    NHL.forEach(function (c) {
+      var bt = h('button', { class: 'hl', type: 'button', 'data-c': c[0], 'aria-label': 'Surligner en ' + c[1].toLowerCase(), title: 'Surligner : ' + c[1].toLowerCase(), onclick: function () { wrapSel(ta, '{' + c[0] + ':', '}'); } });
+      bt.addEventListener('mousedown', keep); bar.append(bt);
+    });
+    return bar;
+  }
   function noteKey(e, ta) {
     if (e.key === 'Escape') { e.stopPropagation(); ta.blur(); return; }
+    if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey) {
+      var f = NFMT.filter(function (x) { return x[0] === e.key.toLowerCase(); })[0];
+      if (f) { e.preventDefault(); wrapSel(ta, f[1], f[2]); }
+      return;
+    }
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     var v = ta.value, a = ta.selectionStart, b = ta.selectionEnd;
     var ls = v.lastIndexOf('\n', a - 1) + 1;
@@ -702,7 +752,11 @@
     if (cur) {
       var ta = h('textarea', { class: 'ntext', 'aria-label': 'Note', placeholder: 'Écrivez ici', spellcheck: 'false' });
       ta.value = cur.text;
+      var mir = h('div', { class: 'nmirror', 'aria-hidden': 'true' });
+      function paint() { mir.innerHTML = fmtHtml(ta.value); }
+      paint();
       ta.oninput = function () {
+        paint();
         cur.text = ta.value; cur.u = Date.now(); cur.d = true;
         var li = ul.querySelector('.ni[data-id="' + cur.id + '"]');
         if (li) { li.querySelector('.nt').textContent = noteTitle(cur); li.querySelector('.np').textContent = notePreview(cur); li.querySelector('.nd').textContent = noteDate(cur.u); }
@@ -715,7 +769,7 @@
           h('button', { class: 'ghost nback', type: 'button', text: 'Notes', onclick: function () { leaveNote(); render(); } }),
           h('span', { class: 'nd', text: 'Modifiée ' + noteDate(cur.u) }),
           h('button', { class: 'ghost ndel', type: 'button', text: 'Supprimer', onclick: function () { deleteNote(cur); } })
-        ]), ta]);
+        ]), fmtBar(ta), h('div', { class: 'nwrap' }, [mir, ta])]);
     } else ed = h('section', { class: 'ned' }, [null]);
     return [h('div', { class: 'notes' + (cur ? ' open' : '') + (narrow ? ' narrow' : '') }, [list, ed])];
   }
