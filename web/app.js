@@ -125,7 +125,7 @@
     lay: ico('<rect x="4" y="5" width="4.5" height="14" rx="1.5"/><rect x="10" y="5" width="4.5" height="14" rx="1.5"/><rect x="16" y="5" width="4" height="14" rx="1.5"/>'),
     cfg: ico('<path d="M4 8h9M17 8h3M4 16h3M11 16h9"/><circle cx="15" cy="8" r="2"/><circle cx="9" cy="16" r="2"/>'),
     sub: ico('<path d="M7 5v8a3 3 0 0 0 3 3h8"/><path d="M15 12.5l3 3.5-3 3.5"/>'),
-    close: ico('<path d="M6 6l12 12M18 6L6 18"/>')
+    close: ico('<path d="M6 12h12"/>')
   };
   function h(tag, props, kids) {
     var e = document.createElement(tag);
