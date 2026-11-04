@@ -121,6 +121,7 @@
     left: ico('<path d="M14.5 6l-6 6 6 6"/>'),
     right: ico('<path d="M9.5 6l6 6-6 6"/>'),
     help: ico('<circle cx="12" cy="12" r="8.5"/><path d="M9.7 9.6a2.4 2.4 0 1 1 3.4 2.2c-.7.4-1.1.9-1.1 1.7M12 16.6v.1"/>'),
+    split: ico('<rect x="4" y="5" width="7" height="14" rx="2"/><rect x="13" y="5" width="7" height="14" rx="2"/>'),
     lay: ico('<rect x="4" y="5" width="4.5" height="14" rx="1.5"/><rect x="10" y="5" width="4.5" height="14" rx="1.5"/><rect x="16" y="5" width="4" height="14" rx="1.5"/>'),
     cfg: ico('<path d="M4 8h9M17 8h3M4 16h3M11 16h9"/><circle cx="15" cy="8" r="2"/><circle cx="9" cy="16" r="2"/>'),
     sub: ico('<path d="M7 5v8a3 3 0 0 0 3 3h8"/><path d="M15 12.5l3 3.5-3 3.5"/>'),
@@ -630,8 +631,8 @@
     return [weekStrip(), h('div', { class: 'grid' }, [h('div', { class: 'col' }, [left]), h('div', { class: 'col side' }, [right])])];
   }
 
-  function notesView() {
-    var wide = window.innerWidth > 700, q = state.nq.trim().toLowerCase();
+  function notesView(narrow) {
+    var wide = !narrow && window.innerWidth > 700, q = state.nq.trim().toLowerCase();
     var all = notes.slice().sort(function (a, b) { return b.u - a.u; });
     var shown = q ? all.filter(function (n) { return n.text.toLowerCase().indexOf(q) >= 0; }) : all;
     if (!noteById(state.note)) state.note = null;
@@ -672,7 +673,7 @@
           h('button', { class: 'ghost ndel', type: 'button', text: 'Supprimer', onclick: function () { deleteNote(cur); } })
         ]), ta]);
     } else ed = h('section', { class: 'ned' }, [null]);
-    return [h('div', { class: 'notes' + (cur ? ' open' : '') }, [list, ed])];
+    return [h('div', { class: 'notes' + (cur ? ' open' : '') + (narrow ? ' narrow' : '') }, [list, ed])];
   }
 
   function calView() {
@@ -692,7 +693,7 @@
         kids.push(h('span', { class: 'dots' }, nOpen ? [h('i'), nOpen > 1 ? h('i') : null, nOpen > 2 ? h('i') : null] : []));
         var b = h('button', { type: 'button', class: 'cell' + (inMonth ? '' : ' out') + (k === todayK ? ' today' : '') + (k === selK ? ' sel' : ''),
           'aria-label': cap(DAYS[d.getDay()]) + ' ' + d.getDate() + ' ' + MONTHS[d.getMonth()] + (l.length ? ', ' + l.length + ' tâche' + (l.length > 1 ? 's' : '') : ''),
-          onclick: function () { state.sel = d; state.view = 'hz'; render('fade'); } }, kids);
+          onclick: function () { state.sel = d; if (!splitOn()) state.view = 'hz'; render('fade'); } }, kids);
         dropTarget(b, 'day', function () { return d; });
         g.append(b);
       })(addDays(start, i));
@@ -700,6 +701,39 @@
     var out = [g];
     if (!monthCount) out.push(h('div', { class: 'empty-state cal-none' }, [h('div', { html: ART_CAL })]));
     return out;
+  }
+
+  /* ---------- vue double : deux vues côte à côte ---------- */
+  var VIEWS = [['hz', 'Listes'], ['plan', 'Planning'], ['cal', 'Calendrier'], ['notes', 'Notes']];
+  function splitOn() { return !!prefs.split && prefs.split !== state.view && window.innerWidth > 700; }
+  function setMain(v) {
+    if (state.view === v) return;
+    var old = state.view;
+    if (splitOn() && prefs.split === v) prefs.split = old;                       // échange des deux volets
+    else if (old === 'notes' && !(splitOn() && prefs.split === 'notes')) leaveNote();
+    state.view = v; applyPrefs(); render('fade');
+  }
+  function setSplit(v) {
+    if (prefs.split === v) return;
+    if (v === state.view) { var m = state.view; state.view = prefs.split; prefs.split = m; }
+    else { if (prefs.split === 'notes' && state.view !== 'notes') leaveNote(); prefs.split = v; }
+    applyPrefs(); render('fade');
+  }
+  function toggleSplit() {
+    if (splitOn()) { if (prefs.split === 'notes' && state.view !== 'notes') leaveNote(); prefs.split = ''; }
+    else prefs.split = state.view === 'notes' ? 'plan' : 'notes';
+    applyPrefs(); render('fade');
+  }
+  function paneNodes(v, narrow) { return v === 'hz' ? hzView() : v === 'plan' ? planView() : v === 'notes' ? notesView(narrow) : calView(); }
+  function stageNodes() {
+    if (!splitOn()) return paneNodes(state.view);
+    var a = state.view, b = prefs.split;
+    function nodes(v) { var n = paneNodes(v, true); return v === 'hz' || v === 'plan' ? n.slice(1) : n; } // la bande des jours est commune
+    var needStrip = a === 'hz' || a === 'plan' || b === 'hz' || b === 'plan';
+    var bar = h('div', { class: 'pane-bar' }, [h('div', { class: 'seg', role: 'group', 'aria-label': 'Vue du second volet' }, VIEWS.map(function (v) {
+      return h('button', { type: 'button', text: v[1], 'aria-pressed': String(b === v[0]), onclick: function () { setSplit(v[0]); } });
+    }))]);
+    return [needStrip ? weekStrip() : null, h('div', { class: 'panes' }, [h('div', { class: 'pane' }, nodes(a)), h('div', { class: 'pane' }, [bar].concat(nodes(b)))])];
   }
 
   function topbar() {
@@ -710,7 +744,7 @@
       render(n > 0 ? 'next' : 'prev');
     }
     function seg(v, label) {
-      return h('button', { type: 'button', text: label, 'aria-pressed': String(state.view === v), onclick: function () { if (state.view !== v) { if (state.view === 'notes') leaveNote(); state.view = v; render('fade'); } } });
+      return h('button', { type: 'button', text: label, 'aria-pressed': String(state.view === v), onclick: function () { setMain(v); } });
     }
     return h('div', { class: 'top' }, [
       h('h1', { 'aria-live': 'polite' }, nts ? ['Notes'] : [cap(MONTHS[d.getMonth()]) + ' ', h('span', { class: 'yr', text: '' + d.getFullYear() })]),
@@ -721,10 +755,12 @@
           navBtn('right', cal ? 'Mois suivant' : 'Semaine suivante', function () { step(1); })
         ]),
         h('div', { class: 'dock' }, [
-          h('div', { class: 'seg', role: 'group', 'aria-label': 'Vue' }, [seg('hz', 'Listes'), seg('plan', 'Planning'), seg('cal', 'Calendrier'), seg('notes', 'Notes')]),
+          h('div', { class: 'seg', role: 'group', 'aria-label': 'Vue' }, VIEWS.map(function (v) { return seg(v[0], v[1]); })),
           h('button', { class: 'today-fab', type: 'button', 'aria-label': 'Revenir à aujourd’hui', text: '' + new Date().getDate(), onclick: goToday })
         ]),
-        state.view === 'hz' ? h('button', { class: 'nav lay-btn', type: 'button', 'aria-label': prefs.lay === 'h' ? 'Vue verticale' : 'Vue horizontale', 'aria-pressed': String(prefs.lay === 'h'), html: IC.lay,
+        h('button', { class: 'nav split-btn', type: 'button', 'aria-label': splitOn() ? 'Fermer la vue double' : 'Vue double', 'aria-pressed': String(splitOn()), html: IC.split,
+          onclick: toggleSplit }),
+        state.view === 'hz' || (splitOn() && prefs.split === 'hz') ? h('button', { class: 'nav lay-btn', type: 'button', 'aria-label': prefs.lay === 'h' ? 'Vue verticale' : 'Vue horizontale', 'aria-pressed': String(prefs.lay === 'h'), html: IC.lay,
           onclick: function () { prefs.lay = prefs.lay === 'h' ? 'v' : 'h'; applyPrefs(); render('fade'); } }) : null,
         h('button', { class: 'nav help-btn', type: 'button', 'aria-label': 'Raccourcis clavier', html: IC.help, onclick: openHelp }),
         h('button', { class: 'nav cfg-btn' + (cfgAlert() ? ' alert' : ''), type: 'button', 'aria-label': 'Réglages', 'aria-haspopup': 'dialog', html: IC.cfg, onclick: openSettings })
@@ -754,8 +790,9 @@
       else if (a.classList && a.classList.contains('add-in')) keep = { type: a.dataset.type, value: a.value };
     }
     var before = anim ? null : rects();
-    var stage = h('div', { class: 'stage' + (anim ? ' ' + anim : '') }, state.view === 'hz' ? hzView() : state.view === 'plan' ? planView() : state.view === 'notes' ? notesView() : calView());
-    root.dataset.view = state.view; root.dataset.lay = state.view === 'hz' ? prefs.lay : 'v';
+    var stage = h('div', { class: 'stage' + (anim ? ' ' + anim : '') }, stageNodes());
+    root.dataset.view = state.view; root.dataset.split = splitOn() ? '1' : '';
+    root.dataset.lay = state.view === 'hz' || (splitOn() && prefs.split === 'hz') ? prefs.lay : 'v';
     root.replaceChildren(topbar(), stage, live);
     entering = {};
     if (before && !reduceMotion.matches) {
@@ -794,12 +831,13 @@
   /* ---------- thèmes et réglages ---------- */
   var THEMES = [['ardoise', 'Ardoise'], ['papier', 'Neutre'], ['sauge', 'Sauge'], ['minuit', 'Minuit']];
   var PKEY = 'todo.ui';
-  var prefs = { theme: 'ardoise', mode: 'auto', lay: 'v' };
+  var prefs = { theme: 'ardoise', mode: 'auto', lay: 'v', split: '' };
   try {
     var sp = JSON.parse(localStorage.getItem(PKEY));
     if (sp && THEMES.some(function (t) { return t[0] === sp.theme; })) prefs.theme = sp.theme;
     if (sp && ['auto', 'light', 'dark'].indexOf(sp.mode) >= 0) prefs.mode = sp.mode;
     if (sp && sp.lay === 'h') prefs.lay = 'h';
+    if (sp && ['hz', 'plan', 'cal', 'notes'].indexOf(sp.split) >= 0) prefs.split = sp.split;
   } catch (e) {}
   function syncMeta() { // couleur de la barre d'état iPhone = fond du thème
     var p = document.createElement('i'); p.style.cssText = 'position:fixed;width:0;height:0;background:var(--bg-solid)';

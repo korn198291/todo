@@ -571,10 +571,10 @@ dialog.sheet::backdrop { background: var(--scrim); animation: fade-in var(--d-ba
 .ntext { display: block; width: 100%; min-height: 60vh; margin-top: var(--s4); padding: 0; border: 0; background: transparent; color: var(--fg); font: inherit; font-size: var(--fs-task); line-height: 1.6; resize: none; outline: none; caret-color: var(--fg); }
 .ntext::placeholder { color: var(--mute); }
 @media (min-width: 701px) {
-  .notes { grid-template-columns: 280px minmax(0, 1fr); gap: var(--s10); align-items: start; }
-  .notes:not(.open) .ned, .notes.open .nlist { display: block; }
-  .nback { display: none; }
-  .nlist { position: sticky; top: var(--s6); }
+  .notes:not(.narrow) { grid-template-columns: 280px minmax(0, 1fr); gap: var(--s10); align-items: start; }
+  .notes:not(.narrow):not(.open) .ned, .notes:not(.narrow).open .nlist { display: block; }
+  .notes:not(.narrow) .nback { display: none; }
+  .notes:not(.narrow) .nlist { position: sticky; top: var(--s6); }
 }
 
 /* ---------- Listes : vue horizontale (5 horizons côte à côte) ---------- */
@@ -594,3 +594,13 @@ dialog.sheet::backdrop { background: var(--scrim); animation: fade-in var(--d-ba
 /* vue horizontale : barre horizontale entre la bande des jours et les colonnes */
 .app[data-lay="h"] .days { margin-bottom: 0; padding-bottom: var(--s4); border-bottom: 1px solid var(--line); }
 .app[data-lay="h"] .hrow { padding-top: var(--s6); }
+
+/* ---------- Vue double ---------- */
+.app[data-split="1"] { max-width: none; padding-left: var(--s8); padding-right: var(--s8); }
+.panes { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s10); align-items: start; }
+.pane { min-width: 0; }
+.pane + .pane { padding-left: var(--s10); border-left: 1px solid var(--line); }
+.pane-bar { display: flex; margin-bottom: var(--s6); }
+.split-btn { display: none; }
+.split-btn[aria-pressed="true"] { color: var(--fg); background: var(--surface-2); }
+@media (min-width: 701px) { .split-btn { display: grid; } }
