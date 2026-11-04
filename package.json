@@ -6,7 +6,8 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "dist": "electron-builder --mac dmg"
+    "dist": "electron-builder --mac dmg",
+    "install-app": "./scripts/install-app.sh"
   },
   "devDependencies": {
     "electron": "^33.0.0",

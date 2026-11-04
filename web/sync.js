@@ -70,7 +70,7 @@
   function withToken(fn) {
     return token().then(fn).catch(function (e) { if (e && e.status === 401 && auth) return refresh().then(fn); throw e; });
   }
-  function started(email) { write(CURK, null); set({ status: 'idle', email: email, error: '' }); return run().then(function () { return { ok: true }; }); }
+  function started(email) { TABLES.forEach(function (T) { write(T.cur, null); }); set({ status: 'idle', email: email, error: '' }); return run().then(function () { return { ok: true }; }); }
   function signIn(email, pw) {
     return http('POST', '/auth/v1/token?grant_type=password', { body: { email: email, password: pw } })
       .then(function (j) { setAuth(j, email); return started(email); }, function (e) { throw new Error(fr(e)); });
@@ -81,64 +81,85 @@
       return { ok: false, confirm: true };
     }, function (e) { throw new Error(fr(e)); });
   }
-  function signOut() { auth = null; write(AUTHK, null); write(CURK, null); set({ status: 'signedout', email: '', error: '' }); }
+  function signOut() { auth = null; write(AUTHK, null); TABLES.forEach(function (T) { write(T.cur, null); }); set({ status: 'signedout', email: '', error: '' }); }
+
+  /* ---------- tables : tâches et créneaux ---------- */
+  function byO(a, b) { return a.o - b.o || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0); }
+  function byA(a, b) { return a.k < b.k ? -1 : a.k > b.k ? 1 : a.a - b.a || a.e - b.e || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0); }
+  function byU(a, b) { return b.u - a.u || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0); }
+  var TABLES = [
+    { name: 'tasks', rows: 'tasks', tombs: 'tombs', cur: CURK, sort: byO, cols: 'id,text,done,t,k,o,u,x,s,c,b,ts',
+      valid: function (r) { return r && typeof r.id === 'string' && typeof r.text === 'string' && TYPES.indexOf(r.t) >= 0 && typeof r.k === 'string'; },
+      toRow: function (r) { return { id: r.id, text: r.text, done: !!r.done, t: r.t, k: r.k, o: r.o, u: r.u, x: !!r.x, s: (r.s || []).filter(function (x) { return x && x.text; }), c: r.c || '', b: r.b || '' }; },
+      mk: function (r) { return { id: r.id, text: r.text, done: !!r.done, t: r.t, k: r.k, o: +r.o || 0, u: +r.u, d: false, s: Array.isArray(r.s) ? r.s : [], c: typeof r.c === 'string' ? r.c : '', b: typeof r.b === 'string' ? r.b : '' }; } },
+    { name: 'blocks', rows: 'blocks', tombs: 'btombs', cur: CURK + '.blocks', sort: byA, cols: 'id,k,a,e,u,x,ts',
+      valid: function (r) { return r && typeof r.id === 'string' && typeof r.k === 'string' && isFinite(r.a) && isFinite(r.e); },
+      toRow: function (r) { return { id: r.id, k: r.k, a: r.a, e: r.e, u: r.u, x: !!r.x }; },
+      mk: function (r) { return { id: r.id, k: r.k, a: +r.a, e: +r.e, u: +r.u, d: false }; } },
+    { name: 'notes', rows: 'notes', tombs: 'ntombs', cur: CURK + '.notes', sort: byU, cols: 'id,text,cr,u,x,ts',
+      valid: function (r) { return r && typeof r.id === 'string' && typeof r.text === 'string'; },
+      toRow: function (r) { return { id: r.id, text: r.text, cr: r.cr || r.u, u: r.u, x: !!r.x }; },
+      mk: function (r) { return { id: r.id, text: r.text, cr: +r.cr || +r.u, u: +r.u, d: false }; } }
+  ];
 
   /* ---------- fusion (exposée pour les tests) ---------- */
-  function toRow(r) { return { id: r.id, text: r.text, done: !!r.done, t: r.t, k: r.k, o: r.o, u: r.u, x: !!r.x, s: (r.s || []).filter(function (x) { return x && x.text; }), c: r.c || '' }; }
-  function valid(r) { return r && typeof r.id === 'string' && typeof r.text === 'string' && TYPES.indexOf(r.t) >= 0 && typeof r.k === 'string'; }
-  function merge(rows) {
+  function merge(rows, T) {
+    T = T || TABLES[0];
     var s = ad.get(), byId = {}, changed = false;
-    s.tasks.forEach(function (r) { byId[r.id] = r; });
-    s.tombs.forEach(function (r) { byId[r.id] = r; });
+    s[T.rows].forEach(function (r) { byId[r.id] = r; });
+    s[T.tombs].forEach(function (r) { byId[r.id] = r; });
     rows.forEach(function (r) {
-      if (!valid(r)) return;
+      if (!T.valid(r)) return;
       var l = byId[r.id];
       if (l && +r.u <= l.u) return;
-      var n = { id: r.id, text: r.text, done: !!r.done, t: r.t, k: r.k, o: +r.o || 0, u: +r.u, d: false, s: Array.isArray(r.s) ? r.s : [], c: typeof r.c === 'string' ? r.c : '' };
+      var n = T.mk(r);
       if (r.x) n.x = true;
       byId[r.id] = n; changed = true;
     });
     if (!changed) return false;
-    var tasks = [], tombs = [];
-    Object.keys(byId).forEach(function (id) { var r = byId[id]; (r.x ? tombs : tasks).push(r); });
-    tasks.sort(function (a, b) { return a.o - b.o || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0); });
-    ad.set({ tasks: tasks, tombs: tombs });
+    var live = [], dead = [];
+    Object.keys(byId).forEach(function (id) { var r = byId[id]; (r.x ? dead : live).push(r); });
+    live.sort(T.sort);
+    var out = {}; out[T.rows] = live; out[T.tombs] = dead;
+    ad.set(out);
     return true;
   }
 
   /* ---------- envoi puis réception ---------- */
   function seq(fns) { return fns.reduce(function (p, f) { return p.then(f); }, Promise.resolve()); }
-  function push(tk) {
-    var s = ad.get(), recs = s.tasks.concat(s.tombs).filter(function (r) { return r.d; });
+  function push(tk, T) {
+    var s = ad.get(), recs = s[T.rows].concat(s[T.tombs]).filter(function (r) { return r.d; });
     if (!recs.length) return Promise.resolve(false);
-    var chunks = []; for (var i = 0; i < recs.length; i += 500) chunks.push(recs.slice(i, i + 500));
+    var chunks = []; for (var i = 0; i < recs.length; i += 50) chunks.push(recs.slice(i, i + 50));
     return seq(chunks.map(function (ch) {
-      return function () { return http('POST', '/rest/v1/tasks?on_conflict=id', { token: tk, prefer: 'resolution=merge-duplicates,return=minimal', body: ch.map(toRow) }); };
+      return function () { return http('POST', '/rest/v1/' + T.name + '?on_conflict=id', { token: tk, prefer: 'resolution=merge-duplicates,return=minimal', body: ch.map(T.toRow) }); };
     })).then(function () {
       var sent = {}, cur = ad.get(), ch = false;
       recs.forEach(function (r) { sent[r.id] = r.u; });
-      cur.tasks.concat(cur.tombs).forEach(function (r) { if (r.d && sent[r.id] === r.u) { r.d = false; ch = true; } }); // inchangé pendant l'envoi
+      cur[T.rows].concat(cur[T.tombs]).forEach(function (r) { if (r.d && sent[r.id] === r.u) { r.d = false; ch = true; } }); // inchangé pendant l'envoi
       if (ch) ad.save();
       return true;
     });
   }
-  function pull(tk) {
-    var since = read(CURK) || '1970-01-01T00:00:00.000Z', all = [], off = 0, max = 0;
+  function pull(tk, T) {
+    var since = read(T.cur) || '1970-01-01T00:00:00.000Z', all = [], off = 0, max = 0;
     function page() {
-      return http('GET', '/rest/v1/tasks?select=id,text,done,t,k,o,u,x,s,c,ts&ts=gt.' + encodeURIComponent(since) + '&order=ts.asc,id.asc&limit=1000&offset=' + off, { token: tk }).then(function (rows) {
+      return http('GET', '/rest/v1/' + T.name + '?select=' + T.cols + '&ts=gt.' + encodeURIComponent(since) + '&order=ts.asc,id.asc&limit=1000&offset=' + off, { token: tk }).then(function (rows) {
         rows.forEach(function (r) { all.push(r); var m = Date.parse(r.ts); if (m > max) max = m; });
         if (rows.length === 1000) { off += 1000; return page(); }
       });
     }
     return page().then(function () {
-      if (all.length) merge(all);
-      if (max) write(CURK, new Date(max - 120000).toISOString()); // 2 min de recouvrement : une transaction tardive n'est jamais ratée
+      if (all.length) merge(all, T);
+      if (max) write(T.cur, new Date(max - 120000).toISOString()); // 2 min de recouvrement : une transaction tardive n'est jamais ratée
     });
   }
   // récupérer d'abord (on adopte ce qui est plus récent ailleurs), envoyer ensuite, puis récupérer encore si on a envoyé
   function cycle() {
     return withToken(function (tk) {
-      return pull(tk).then(function () { return push(tk); }).then(function (sent) { if (sent) return pull(tk); });
+      return seq(TABLES.map(function (T) {
+        return function () { return pull(tk, T).then(function () { return push(tk, T); }).then(function (sent) { if (sent) return pull(tk, T); }); };
+      }));
     });
   }
 
@@ -166,6 +187,6 @@
 
   window.TodoSync = {
     configured: configured, init: init, schedule: schedule, run: run, signIn: signIn, signUp: signUp, signOut: signOut,
-    state: function () { return st; }, on: function (f) { subs.push(f); }, _merge: merge
+    state: function () { return st; }, on: function (f) { subs.push(f); }, _merge: merge, _tables: TABLES
   };
 })();
