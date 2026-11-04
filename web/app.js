@@ -665,7 +665,28 @@
         clearTimeout(noteTimer); noteTimer = setTimeout(function () { noteTimer = null; save(); }, 400);
       };
       ta.onblur = flushNote;
-      ta.onkeydown = function (e) { if (e.key === 'Escape') { e.stopPropagation(); ta.blur(); } };
+      ta.onkeydown = function (e) {
+        if (e.key === 'Escape') { e.stopPropagation(); ta.blur(); return; }
+        if (e.key !== 'Tab' || e.metaKey || e.ctrlKey || e.altKey) return;
+        e.preventDefault();                                   // Tab indente au lieu de changer de champ (Échap pour sortir)
+        var v = ta.value, a = ta.selectionStart, b = ta.selectionEnd;
+        var ls = v.lastIndexOf('\n', a - 1) + 1;
+        function put(txt, from, to) { ta.setSelectionRange(from, to); if (!document.execCommand('insertText', false, txt)) ta.setRangeText(txt, from, to, 'end'); }
+        if (a === b && !e.shiftKey) { put('\t', a, a); }
+        else {
+          var end = v.indexOf('\n', b > a && v[b - 1] === '\n' ? b - 1 : b); if (end < 0) end = v.length;
+          var lines = v.slice(ls, end).split('\n'), n0 = 0, first = 0;
+          var out = lines.map(function (l, i) {
+            if (!e.shiftKey) return '\t' + l;
+            var r = l.charAt(0) === '\t' ? 1 : (/^ {1,4}/.exec(l) || [''])[0].length;
+            if (i === 0) first = r; n0 += r; return l.slice(r);
+          }).join('\n');
+          put(out, ls, end);
+          var d = e.shiftKey ? -n0 : lines.length, d0 = e.shiftKey ? -first : 1;
+          ta.setSelectionRange(Math.max(ls, a + d0), Math.max(ls, b + d));
+        }
+        ta.dispatchEvent(new Event('input'));
+      };
       ed = h('section', { class: 'ned', 'aria-label': 'Édition de la note' }, [
         h('div', { class: 'nbar' }, [
           h('button', { class: 'ghost nback', type: 'button', text: 'Notes', onclick: function () { leaveNote(); render(); } }),
