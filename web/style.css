@@ -540,7 +540,16 @@ dialog.sheet::backdrop { background: var(--scrim); animation: fade-in var(--d-ba
 .bh .act { opacity: 1; margin: 0 -8px 0 0; }
 .dash { color: var(--mute); }
 .tm { border: 0; background: none; color: var(--fg); font: 600 var(--fs-card)/1.2 var(--display); letter-spacing: -.03em; padding: 4px 2px; min-height: 36px; border-radius: var(--r-md); font-variant-numeric: tabular-nums; }
+.tmw { position: relative; display: inline-block; }
+.tm { width: 4.4ch; box-sizing: content-box; text-align: center; outline: none; transition: background var(--d-fast), box-shadow var(--d-fast); }
 .tm:hover { background: var(--surface-2); }
+.tm:focus { background: var(--surface-2); box-shadow: 0 0 0 2px var(--fg); }
+.tm.bad { box-shadow: 0 0 0 2px #d33; }
+.tml { position: absolute; z-index: 30; top: calc(100% + 6px); left: 50%; transform: translateX(-50%); width: 92px; max-height: 232px; overflow-y: auto; overscroll-behavior: contain; padding: 4px; border-radius: var(--r-md); background: var(--surface); box-shadow: 0 0 0 1px var(--line), 0 12px 32px rgba(0,0,0,.14); }
+.tmo { display: block; width: 100%; border: 0; background: none; color: var(--fg); font: 500 var(--fs-small)/1 var(--display); font-variant-numeric: tabular-nums; padding: 9px 0; border-radius: 9px; text-align: center; cursor: pointer; }
+.tmo:hover { background: var(--surface-2); }
+.tmo.on { background: var(--fg); color: var(--surface); }
+.dur { margin-left: var(--s2); padding: 2px 8px; border-radius: var(--r-full); background: var(--surface-2); color: var(--mute); font-size: var(--fs-meta); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .addblk { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s2); margin-top: var(--s6); }
 .addblk .tm { font-size: var(--fs-task); box-shadow: 0 0 0 1px var(--line); padding: 4px 8px; }
 .addblk .btn { margin-left: var(--s2); }

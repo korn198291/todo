@@ -579,7 +579,47 @@
     ])];
   }
 
-  function timeIn(m, label) { return h('input', { class: 'tm', type: 'time', value: toTime(m), step: '300', 'aria-label': label, required: '' }); }
+  /* champ d'heure : saisie libre (9, 930, 9h30, 9:30), flèches +/-5 min (Maj : 1 h), liste de choix tous les 15 min */
+  function parseTime(v) {
+    var m = /^\s*(\d{1,2})(?:\s*(?:h|:|\.|H)?\s*(\d{1,2})?)?\s*$/.exec(v), x;
+    if (!m) { var d = String(v).replace(/\D/g, ''); if (!/^\d{3,4}$/.test(d)) return NaN; m = [0, d.slice(0, -2), d.slice(-2)]; }
+    x = (+m[1]) * 60 + (+(m[2] || 0));
+    return (+m[1] <= 24 && +(m[2] || 0) < 60 && x <= 1440) ? x : NaN;
+  }
+  function fmtDur(n) { var h2 = Math.floor(n / 60), r = n % 60; return h2 ? h2 + ' h' + (r ? ' ' + pad(r) : '') : r + ' min'; }
+  var openTm = null;
+  function closeTm() { if (openTm) { openTm.remove(); openTm = null; } }
+  document.addEventListener('pointerdown', function (ev) { if (openTm && !openTm.parentNode.contains(ev.target)) closeTm(); });
+  function timeIn(m, label) {
+    var cur = m, input = h('input', { class: 'tm', type: 'text', inputmode: 'numeric', autocomplete: 'off', value: toTime(m), 'aria-label': label, role: 'combobox', 'aria-expanded': 'false', maxlength: '5' });
+    var w = h('span', { class: 'tmw' }, [input]);
+    Object.defineProperty(w, 'value', { get: function () { return toTime(cur); } });
+    function fire() { w.dispatchEvent(new Event('change')); }
+    function set(x, silent) { cur = Math.max(0, Math.min(1440, x)); input.value = toTime(cur); if (!silent) fire(); }
+    function commit() { var x = parseTime(input.value); if (isNaN(x)) { input.value = toTime(cur); return; } if (x !== cur) set(x); else input.value = toTime(cur); }
+    function open() {
+      closeTm();
+      var list = h('div', { class: 'tml', role: 'listbox', 'aria-label': label }), sel = null;
+      for (var x = 0; x <= 1440; x += 15) (function (x) {
+        var o = h('button', { type: 'button', class: 'tmo' + (x === cur ? ' on' : ''), role: 'option', 'aria-selected': String(x === cur), text: toTime(x),
+          onpointerdown: function (ev) { ev.preventDefault(); }, onclick: function () { set(x); closeTm(); input.blur(); } });
+        if (x === cur) sel = o; list.append(o);
+      })(x);
+      w.append(list); openTm = list; input.setAttribute('aria-expanded', 'true');
+      var near = sel || list.children[Math.min(96, Math.round(cur / 15))];
+      list.scrollTop = near.offsetTop - list.clientHeight / 2 + near.offsetHeight / 2;
+    }
+    input.onfocus = function () { input.select(); open(); };
+    input.onclick = function () { if (!openTm) open(); };
+    input.onblur = function () { commit(); closeTm(); input.setAttribute('aria-expanded', 'false'); };
+    input.oninput = function () { var x = parseTime(input.value); input.classList.toggle('bad', input.value !== '' && isNaN(x) && input.value.length > 4); };
+    input.onkeydown = function (ev) {
+      if (ev.key === 'Enter') { ev.preventDefault(); commit(); closeTm(); input.select(); }
+      else if (ev.key === 'Escape') { input.value = toTime(cur); closeTm(); input.blur(); }
+      else if (ev.key === 'ArrowUp' || ev.key === 'ArrowDown') { ev.preventDefault(); set(cur + (ev.key === 'ArrowUp' ? 1 : -1) * (ev.shiftKey ? 60 : 5), true); input.select(); if (openTm) open(); }
+    };
+    return w;
+  }
   function blockCard(b) {
     var its = tasks.filter(function (t) { return t.t === 'day' && t.k === b.k && t.b === b.id; });
     var nDone = its.filter(function (t) { return t.done; }).length;
@@ -589,6 +629,7 @@
     var del = h('button', { class: 'act', type: 'button', 'aria-label': 'Supprimer le créneau ' + fmtMin(b.a) + ' à ' + fmtMin(b.e), html: IC.x, onclick: function () { removeBlock(b); } });
     var c = h('div', { class: 'card blk', 'aria-label': 'Créneau ' + fmtMin(b.a) + ' à ' + fmtMin(b.e) }, [
       h('header', { class: 'bh' }, [a, h('span', { class: 'dash', 'aria-hidden': 'true', text: '-' }), e,
+        h('span', { class: 'dur', text: fmtDur(b.e - b.a) }),
         its.length ? h('span', { class: 'cnt', 'aria-label': nDone + ' sur ' + its.length + ' terminées' }, [h('b', { text: '' + nDone }), '/' + its.length]) : null, del]),
       its.length ? h('ul', { role: 'list' }, its.map(function (t) { return row(t); })) : h('p', { class: 'none', text: 'Glissez une tâche ici, ou utilisez le menu de la tâche.' })
     ]);
